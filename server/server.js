@@ -2,6 +2,7 @@ const express = require('express');
 const connectToMongoDB = require('./db/connect');
 const dotenv = require('dotenv')
 const cookie = require('cookie-parser')
+const cors = require('cors');
 
 dotenv.config();
 
@@ -14,6 +15,11 @@ connectToMongoDB(process.env.MONGO_URL).then(()=>{console.log('MongoDB Connected
 app.use(express.json());
 app.use(express.urlencoded());
 app.use(cookie());
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 
 const urlRoute = require('./routes/url.route');
 app.use('/url', urlRoute);
@@ -26,7 +32,7 @@ app.get('/:shortId', async (req, res) => {
 
         res.redirect(entry.redirectURL);
     } catch (error) {
-        
+        return res.status(500).json({message: "Internal server error"});
     }
 });
 
