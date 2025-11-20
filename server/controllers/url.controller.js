@@ -1,26 +1,29 @@
 const { customAlphabet } = require('nanoid');
 const URL = require('../models/url.model.js');
 const QRCode = require("qrcode");
+const uploadBufferToCloudinary = require('../utils/cloudinary.js');
 
 async function handleGenerateNewShortURL(req, res) {
     try {
-        const {url, title, qr} = req.body;
+        const {url, title} = req.body;
         if (!url){
             return res.status(400).json({message: 'url is required'});
         }
         const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
         const nanoid = customAlphabet(alphabet, 7);
         const shortenURL = nanoid();
-        // const qr = await QRCode.toDataURL(finalUrl);
+        const upload = await uploadBufferToCloudinary(req.file.buffer);
+        
         await URL.create({
+            userId:req.user._id, 
             title,
             shortId: shortenURL,
             redirectURL: url,
             visitHistory: [],
-            qr
+            qr: upload.url
         })
 
-        return res.status(201).json({id: shortenURL}); 
+        return res.status(201).json({message: "upload success", shortId:shortenURL}); 
 
     } catch (error) {
         return res.status(500).json({message: "Internal server error"});
@@ -32,7 +35,7 @@ async function handleGetAnalytics(req, res) {
         const shortId = req.params.shortId;
         const result = await URL.findOne({shortId});
     
-        return res.json({totalClicks: result.visitHistory.length, analytics: result.visitHistory});
+        return res.json({data: result});
     } catch (error) {
         return res.status(500).json({message: "Internal server error"});
     }
@@ -57,8 +60,7 @@ async function getTotalClicks(req, res){
       (sum, url) => sum + url.visitHistory.length,
       0
     );
-
-    return res.status(200).json({ totalClick: totalClicks });
+    return res.status(200).json({ totalClicks: totalClicks });
   } catch {
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -66,7 +68,8 @@ async function getTotalClicks(req, res){
 
 async function deleteUrl(req, res) {
     try {
-        await URL.findByIdAndDelete({_id: req.body._id});
+        const deleteId = req.params.deleteId;
+        await URL.findByIdAndDelete({_id: deleteId});
         return res.status(200).json({message: "Deleted"});
     } catch (error) {
         return res.status(500).json({ message: "Internal server error" });

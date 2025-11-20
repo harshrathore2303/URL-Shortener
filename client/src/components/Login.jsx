@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardAction,
@@ -8,14 +8,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import Error from "./Error";
+import * as Yup from 'yup'
+import { BeatLoader } from "react-spinners";
+import {api} from '../lib/axios'
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { UrlState } from "@/context";
 
 const Login = () => {
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  let [searchParams] = useSearchParams();
+  const longLink = searchParams.get('createNew')
+  const {fetchfn} = UrlState();
+
+  
 
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -23,6 +37,41 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+  }
+
+  async function handleLogin(){
+    setErrors({});
+    setLoading(true);
+    try {
+      const schema = Yup.object().shape({
+        email: Yup.string().email("Invalid Email").required("Email is required"),
+        password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
+      })
+
+      await schema.validate(formData, {abortEarly: false})
+      
+      const data = await api.post('/user/login', formData);
+      console.log(data);
+      await fetchfn();
+      navigate(`/dashboard?${longLink ? `createNew=${longLink}` : ""}`);
+      
+    } catch (e) {
+      if (e?.inner){
+        const newErrors = {};
+        e?.inner?.forEach(err => {
+          newErrors[err.path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+
+      if (e?.response) {
+        setErrors({
+          backend: e.response.data.message || "Something went wrong",
+        });
+      }
+      console.log(e?.response?.data?.message)
+    }
+    setLoading(false);
   }
 
   return (
@@ -41,7 +90,7 @@ const Login = () => {
             placeholder="Enter your email"
             onChange={handleInputChange}
           />
-          <Error message={"some error"} />
+          {errors.email && <Error message={errors.email} />}
         </div>
         <div className="space-y-1 ">
           <Input
@@ -50,10 +99,12 @@ const Login = () => {
             placeholder="Enter your password "
             onChange={handleInputChange}
           />
+          {errors.password && <Error message={errors.password} />}
         </div> 
+        {errors.backend && <Error message={errors.backend}/>}
       </CardContent>
       <CardFooter>
-        <p>Card Footer</p>
+        <Button onClick={handleLogin}>{loading ? <BeatLoader size={20}/> : "Login"}</Button>
       </CardFooter>
     </Card>
   );

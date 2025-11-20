@@ -11,8 +11,15 @@ const urlSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    title: {
+        type: String,
+        required: true,
+    },
     visitHistory: [{
-        timeStamp: {type: Number}
+        timeStamp: {type: Number},
+        city: {type: String, default: "No info"},
+        country: {type: String, default: "No info"},
+        device: {type: String, default: "No info"}
     }],
     qr: {
         type: String,

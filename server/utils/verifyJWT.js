@@ -15,7 +15,7 @@ async function verifyJWT (req, res, next){
         
         const user = await User.findById(decodedToken?._id).select("-password -profile_pic")
         
-        console.log(token)
+        // console.log(token)
         if (!user) {
             return res.status(401).json({message: "Invalid Access Token"})
         }

@@ -24,7 +24,7 @@ async function signup(req, res) {
       password: encryptedPass,
       profile_pic: null,
     });
-    console.log("vkisn");
+    // console.log("vkisn");
     return res.status(201).json({ message: "User Created" });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
@@ -54,7 +54,7 @@ async function login(req, res) {
         return res.status(404).json({ message: "Password is not correct." });
     }
     const token = generateToken(user);
-    console.log(token)
+    // console.log(token)
     const options = {
       httpOnly: true,
       secure: true,
